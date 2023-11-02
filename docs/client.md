@@ -281,6 +281,16 @@ $ ssh -F /usr/local/ssh/other_config
 $ ssh -i my-key server.example.com
 ```
 
+**-J**
+
+`-J`指定跳转服务器。假定本地无法直接与 SSH 服务器通信，就可以通过`—J`指定跳转服务器。
+
+```bash
+$ ssh -J root@J1,root@J2 root@S1
+```
+
+上面示例中，本机先通过 J1，再通过 J2，登陆到 S1 服务器。
+
 **-l**
 
 `-l`参数指定远程登录的账户名。
@@ -463,29 +473,28 @@ SSH 客户端的全局配置文件是`/etc/ssh/ssh_config`，用户个人的配�
 用户个人的配置文件`~/.ssh/config`，可以按照不同服务器，列出各自的连接参数，从而不必每一次登录都输入重复的参数。下面是一个例子。
 
 ```bash
-Host *
-     Port 2222
-
 Host remoteserver
      HostName remote.example.com
      User neo
      Port 2112
+
+Host *
+     Port 2222
 ```
 
-上面代码中，`Host *`表示对所有主机生效，后面的`Port 2222`表示所有主机的默认连接端口都是2222，这样就不用在登录时特别指定端口了。这里的缩进并不是必需的，只是为了视觉上，易于识别针对不同主机的设置。
+上面代码中，`Host remoteserver`表示，下面的设置只对主机`remoteserver`生效。`remoteserver`只是一个别名，具体的主机由`HostName`命令指定，`User`和`Port`这两项分别表示用户名和端口。`HostName`、`User`、`Port`这三项前面的缩进并不是必需的，只是为了视觉上易于识别针对不同主机的设置。
 
-后面的`Host remoteserver`表示，下面的设置只对主机`remoteserver`生效。`remoteserver`只是一个别名，具体的主机由`HostName`命令指定，`User`和`Port`这两项分别表示用户名和端口。这里的`Port`会覆盖上面`Host *`部分的`Port`设置。
+后面的`Host *`表示对所有主机生效，`*`是一个通配符，比如`Host *.edu`表示只对一级域名为`.edu`的主机生效。这条命令下面的`Port 2222`表示所有主机的默认连接端口都是2222，这样就不用在登录时特别指定端口了。
+
+注意，当`Host *`与`Host remoteserver`下面有同一项设定时（比如两者都有`Port`设定），第一个出现的值生效。在本例中，连接`remoteserver`时，默认端口将是2112，而不是2222，如果`Host *`放在配置文件的顶部，那么默认端口将是2222。
 
 以后，登录`remote.example.com`时，只要执行`ssh remoteserver`命令，就会自动套用 config 文件里面指定的参数。
-单个主机的配置格式如下。
 
 ```bash
 $ ssh remoteserver
 # 等同于
 $ ssh -p 2112 neo@remote.example.com
 ```
-
-`Host`命令的值可以使用通配符，比如`Host *`表示对所有主机都有效的设置，`Host *.edu`表示只对一级域名为`.edu`的主机有效的设置。它们的设置都可以被单个主机的设置覆盖。
 
 ###  配置命令的语法
 
@@ -528,7 +537,7 @@ Compression = yes
 - `RemoteForward 2001 server:143`：指定远程端口转发。
 - `SendEnv COLOR`：SSH 客户端向服务器发送的环境变量名，多个环境变量之间使用空格分隔。环境变量的值从客户端当前环境中拷贝。
 - `ServerAliveCountMax 3`：如果没有收到服务器的回应，客户端连续发送多少次`keepalive`信号，才断开连接。该项默认值为3。
-- `ServerAliveInterval 300`：客户端建立连接后，如果在给定秒数内，没有收到服务器发来的消息，客户端向服务器发送`keepalive`消息。如果不希望客户端发送，这一项设为`0`。
+- `ServerAliveInterval 300`：客户端建立连接后，如果在给定秒数内，没有收到服务器发来的消息，客户端向服务器发送`keepalive`消息。如果不希望客户端发送，这一项设为`0`，即客户端不会主动断开连接。
 - `StrictHostKeyChecking yes`：`yes`表示严格检查，服务器公钥为未知或发生变化，则拒绝连接。`no`表示如果服务器公钥未知，则加入客户端公钥数据库，如果公钥发生变化，不改变客户端公钥数据库，输出一条警告，依然允许连接继续进行。`ask`（默认值）表示询问用户是否继续进行。
 - `TCPKeepAlive yes`：客户端是否定期向服务器发送`keepalive`信息。
 - `User userName`：指定远程登录的账户名。
